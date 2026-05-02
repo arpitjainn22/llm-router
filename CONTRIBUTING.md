@@ -18,7 +18,7 @@ you need to get started.
 ## Local setup
 
 ```bash
-git clone https://github.com/yourusername/llm-router.git
+git clone https://github.com/arpitjainn22/llm-router.git
 cd llm-router
 
 python3.11 -m venv venv

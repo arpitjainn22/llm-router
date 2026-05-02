@@ -42,7 +42,7 @@ The router only upgrades to expensive models when it actually needs to.
 
 ```bash
 # 1. Clone
-git clone https://github.com/yourusername/llm-router.git
+git clone https://github.com/arpitjainn22/llm-router.git
 cd llm-router
 
 # 2. Setup environment
@@ -237,7 +237,7 @@ python -m pytest tests/ -v
 ## Contributing
 
 We welcome contributions — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started.  
-Good first issues are tagged [`good first issue`](https://github.com/yourusername/llm-router/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+Good first issues are tagged [`good first issue`](https://github.com/arpitjainn22/llm-router/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 ---
 
