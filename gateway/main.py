@@ -1,16 +1,17 @@
 """
-LLM Router — Phase 1 Gateway
+RouteEase — Intelligent LLM Routing Gateway
 
 OpenAI-compatible API endpoint. Customers point their existing
 OpenAI SDK at this server by changing just the base_url:
 
     from openai import AsyncOpenAI
     client = AsyncOpenAI(
-        base_url="https://your-router.com/v1",
-        api_key="your-router-key",
+        base_url="https://api.routease.io/v1",
+        api_key="rk-live-your-routease-key",
     )
 
 No other code changes needed. We route transparently underneath.
+Bring your own LLM provider keys — we handle the routing.
 """
 
 import asyncio
@@ -67,11 +68,11 @@ async def lifespan(app: FastAPI):
     auth_service = AuthService(session_factory)
     key_vault = KeyVault(session_factory)
 
-    log.info("gateway_started", environment=settings.environment)
+    log.info("routease_started", service="RouteEase", environment=settings.environment)
     yield
 
     await engine.dispose()
-    log.info("gateway_stopped")
+    log.info("routease_stopped")
 
 
 # ---------------------------------------------------------------------------
@@ -79,8 +80,8 @@ async def lifespan(app: FastAPI):
 # ---------------------------------------------------------------------------
 
 app = FastAPI(
-    title="LLM Router",
-    description="Intelligent multi-LLM routing gateway",
+    title="RouteEase",
+    description="Intelligent multi-LLM routing gateway. Route with ease.",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -337,31 +338,43 @@ async def chat_completions(
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {
+        "status":  "ok",
+        "version": "0.1.0",
+        "service": "RouteEase",
+        "docs":    "https://github.com/arpitjainn22/routease",
+    }
 
 
 @app.get("/")
 async def landing_page():
-    """Serve the landing page."""
+    """Serve the RouteEase landing page."""
     landing_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "landing", "index.html"
     )
     if os.path.exists(landing_path):
         return FileResponse(landing_path)
-    return {"message": "LLM Router API", "docs": "/docs", "health": "/health"}
+    return {
+        "message": "RouteEase API",
+        "tagline": "Route with ease.",
+        "docs":    "/docs",
+        "health":  "/health",
+        "github":  "https://github.com/arpitjainn22/routease",
+    }
 
 
 @app.get("/v1/models")
 async def list_models(tenant: dict = Depends(authenticate)):
     """List all routable models — mimics OpenAI's /v1/models endpoint."""
     return {
-        "object": "list",
+        "object":  "list",
+        "service": "RouteEase",
         "data": [
             {
-                "id": model_id,
-                "object": "model",
-                "owned_by": meta["provider"],
+                "id":          model_id,
+                "object":      "model",
+                "owned_by":    meta["provider"],
                 "router_tier": meta["tier"],
             }
             for model_id, meta in MODEL_REGISTRY.items()

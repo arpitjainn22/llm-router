@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🔀 LLM Router
+# ⇄ RouteEase
 
-**Intelligent multi-model LLM routing that cuts your AI costs by 40%**
+**Intelligent LLM routing. Bring your own keys. Route with ease.**
 
 Drop-in replacement for the OpenAI API. One line of code change.
 Routes each query to the cheapest model that can answer it well.
@@ -26,7 +26,7 @@ You're paying for GPT-4o on every request — even "What is the capital of Franc
 
 ## The solution
 
-LLM Router scores each query in <1ms and routes it to the right model:
+RouteEase scores each query in <1ms and routes it to the right model:
 
 | Query | Without router | With router | Saving |
 |-------|---------------|-------------|--------|
@@ -41,8 +41,8 @@ LLM Router scores each query in <1ms and routes it to the right model:
 ## Quick start
 
 ```bash
-git clone https://github.com/arpitjainn22/llm-router.git
-cd llm-router
+git clone https://github.com/arpitjainn22/routease.git
+cd routease
 
 python3.11 -m venv venv
 source venv/bin/activate
@@ -69,7 +69,7 @@ client = AsyncOpenAI(api_key="sk-...")
 # After — everything else stays identical
 from openai import AsyncOpenAI
 client = AsyncOpenAI(
-    base_url="https://api.llmrouter.io/v1",
+    base_url="https://api.routease.io/v1",
     api_key="rk-live-your-router-key",
 )
 ```
@@ -134,7 +134,7 @@ curl "http://localhost:8000/v1/router/explain?prompt=Write+a+binary+search+tree"
 ## Project structure
 
 ```
-llm-router/
+routease/
 ├── gateway/
 │   ├── main.py       # FastAPI app — OpenAI-compatible API
 │   ├── config.py     # Settings, model registry, pricing
@@ -184,7 +184,7 @@ python -m pytest tests/ -v
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues tagged
-[`good first issue`](https://github.com/arpitjainn22/llm-router/issues).
+[`good first issue`](https://github.com/arpitjainn22/routease/issues).
 
 ---
 
@@ -195,5 +195,5 @@ MIT — see [LICENSE](LICENSE)
 ---
 
 <div align="center">
-Built with ❤️ · If this saved you money, give it a ⭐
+Built with ❤️ in India · If this saved you money, give it a ⭐
 </div>

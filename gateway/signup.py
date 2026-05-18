@@ -1,14 +1,14 @@
 """
-Self-serve signup — POST /api/signup
+RouteEase — Self-serve signup — POST /api/signup
 
 Flow:
   1. User submits email + at least one LLM provider key
   2. We validate the key works (test call to provider)
   3. We create a tenant in DB
   4. We store their provider key encrypted in the vault
-  5. We generate a router API key
-  6. We email the router key to them
-  7. They're ready — use the router key, we use their LLM key underneath
+  5. We generate a RouteEase API key
+  6. We email the key to them
+  7. They change one line of code and start routing
 """
 
 import httpx
@@ -138,12 +138,12 @@ async def send_welcome_email(
 </head>
 <body>
 <div class="container">
-  <div class="logo">⇄ llmrouter</div>
-  <h1>You're live, {display_name}.</h1>
+  <div class="logo">⇄ RouteEase</div>
+  <h1>You're live on RouteEase, {display_name}.</h1>
   <p>Your router is connected to: {' '.join(f'<span class="provider-badge">{p}</span>' for p in providers)}</p>
 
   <div class="key-box">
-    <div class="key-label">Your Router API Key</div>
+    <div class="key-label">Your RouteEase API Key</div>
     <div class="key-value">{api_key}</div>
   </div>
 
@@ -154,19 +154,19 @@ async def send_welcome_email(
   <p>Change one line in your existing code:</p>
   <div class="code-box">
     <pre>client = AsyncOpenAI(
-<span class="hl">    base_url="https://api.llmrouter.io/v1",</span>
+<span class="hl">    base_url="https://api.routease.io/v1",</span>
     api_key="{api_key}",
 )</pre>
   </div>
 
   <p>Your LLM provider keys are stored encrypted. The router uses them on your behalf — you never expose them to your end users.</p>
 
-  <a href="https://github.com/arpitjainn22/llm-router/blob/main/SETUP.md" class="btn">Read the docs →</a>
+  <a href="https://github.com/arpitjainn22/routease/blob/main/SETUP.md" class="btn">Read the docs →</a>
 
   <div class="footer">
     <p>Tenant ID: {tenant_id}</p>
     <p>Questions? Reply to this email — I read every one.</p>
-    <p>— Arpit, founder of LLM Router</p>
+    <p>— Arpit, founder of RouteEase</p>
   </div>
 </div>
 </body>
@@ -177,8 +177,8 @@ async def send_welcome_email(
             resp = await client.post(
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
-                json={"from": "LLM Router <arpit@llmrouter.io>", "to": [email],
-                      "subject": "Your LLM Router API key is ready", "html": html_body},
+                json={"from": "RouteEase <arpit@routease.io>", "to": [email],
+                      "subject": "Your RouteEase API key is ready 🚀", "html": html_body},
                 timeout=10.0,
             )
             return resp.status_code == 200
