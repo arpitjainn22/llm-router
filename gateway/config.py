@@ -32,7 +32,11 @@ class Settings(BaseSettings):
         return url
     redis_url: str = "redis://localhost:6379"
 
-    # Email (Resend — https://resend.com, free tier 3K emails/month)
+    # Email — Gmail SMTP (recommended, free, no domain needed)
+    gmail_user: str = ""              # your Gmail address
+    gmail_app_password: str = ""      # Gmail app password (not your login password)
+
+    # Email — Resend (alternative, requires domain)
     resend_api_key: str = ""
 
     # Routing behaviour
