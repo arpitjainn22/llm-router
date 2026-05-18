@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY gateway/    ./gateway/
 COPY classifier/ ./classifier/
 COPY logger/     ./logger/
+COPY landing/    ./landing/
 COPY start.py    ./start.py
 
 RUN useradd -m appuser && chown -R appuser /app
