@@ -8,10 +8,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY gateway/    ./gateway/
 COPY classifier/ ./classifier/
 COPY logger/     ./logger/
+COPY start.py    ./start.py
 
 RUN useradd -m appuser && chown -R appuser /app
 USER appuser
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn gateway.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["python", "start.py"]
