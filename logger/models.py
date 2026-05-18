@@ -39,7 +39,7 @@ class Base(DeclarativeBase):
 def get_engine():
     settings = get_settings()
     return create_async_engine(
-        settings.database_url,
+        settings.async_database_url,
         pool_size=10,
         max_overflow=20,
         echo=(settings.environment == "development"),

@@ -11,12 +11,13 @@ asyncpg==0.29.0
 sqlalchemy[asyncio]==2.0.30
 alembic==1.13.1
 
-# Redis (cache + rate limiting)
+# Redis
 redis[asyncio]==5.0.4
 
-# Auth
+# Auth & encryption
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+cryptography==42.0.5
 
 # Observability
 structlog==24.2.0

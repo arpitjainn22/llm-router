@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Router — Cut your AI costs by 40%</title>
+<meta name="description" content="Intelligent multi-model LLM routing. One line of code change. Automatically routes each query to the cheapest model that can answer it well.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0A0A0F;
+    --bg2:      #111118;
+    --bg3:      #18181F;
+    --border:   #2A2A35;
+    --accent:   #6EE7B7;
+    --accent2:  #3B82F6;
+    --accent3:  #F59E0B;
+    --text:     #F1F5F9;
+    --muted:    #94A3B8;
+    --mono:     'Space Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(110,231,183,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,231,183,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo span { color: var(--text); }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-cta {
+    background: var(--accent);
+    color: var(--bg) !important;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    transition: opacity 0.2s !important;
+  }
+
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 160px 48px 100px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(110,231,183,0.1);
+    border: 1px solid rgba(110,231,183,0.3);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero h1 {
+    font-family: var(--mono);
+    font-size: clamp(42px, 6vw, 80px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -2px;
+    margin-bottom: 24px;
+  }
+
+  .hero h1 .accent { color: var(--accent); }
+  .hero h1 .dim { color: var(--muted); }
+
+  .hero-sub {
+    font-size: 20px;
+    color: var(--muted);
+    max-width: 560px;
+    margin-bottom: 48px;
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  /* ── SIGNUP FORM ── */
+  .signup-form {
+    display: flex;
+    gap: 12px;
+    max-width: 520px;
+    margin-bottom: 24px;
+  }
+
+  .signup-form input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .signup-form input::placeholder { color: var(--muted); }
+  .signup-form input:focus { border-color: var(--accent); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .hero-note {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .hero-note span { color: var(--accent); }
+
+  /* ── SUCCESS STATE ── */
+  .signup-success {
+    display: none;
+    background: rgba(110,231,183,0.08);
+    border: 1px solid rgba(110,231,183,0.3);
+    border-radius: 10px;
+    padding: 20px 24px;
+    max-width: 520px;
+  }
+
+  .signup-success h3 {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .signup-success p {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* ── STATS ── */
+  .stats {
+    display: flex;
+    gap: 48px;
+    margin-top: 64px;
+    padding-top: 48px;
+    border-top: 1px solid var(--border);
+  }
+
+  .stat-item { }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ── HOW IT WORKS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 80px 48px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  .section-sub {
+    color: var(--muted);
+    font-size: 18px;
+    max-width: 540px;
+    margin-bottom: 56px;
+    font-weight: 300;
+  }
+
+  /* ── ROUTING TABLE ── */
+  .routing-demo {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .routing-demo-header {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1fr 1fr;
+    gap: 16px;
+    padding: 14px 24px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .routing-demo-header span {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .routing-row {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1fr 1fr;
+    gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.15s;
+  }
+
+  .routing-row:last-child { border-bottom: none; }
+  .routing-row:hover { background: rgba(255,255,255,0.02); }
+
+  .query-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .model-badge {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    display: inline-block;
+  }
+
+  .tier0 { background: rgba(110,231,183,0.1); color: var(--accent); border: 1px solid rgba(110,231,183,0.2); }
+  .tier1 { background: rgba(59,130,246,0.1); color: #93C5FD; border: 1px solid rgba(59,130,246,0.2); }
+  .tier2 { background: rgba(245,158,11,0.1); color: var(--accent3); border: 1px solid rgba(245,158,11,0.2); }
+
+  .cost-text { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .saving-text { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 700; }
+
+  /* ── CODE SNIPPET ── */
+  .code-block {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 40px;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+  }
+
+  .code-dot:nth-child(1) { background: #FF5F57; }
+  .code-dot:nth-child(2) { background: #FEBC2E; }
+  .code-dot:nth-child(3) { background: #28C840; }
+
+  .code-title {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .code-body {
+    padding: 24px;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .code-comment { color: #4B5563; }
+  .code-keyword { color: #93C5FD; }
+  .code-string { color: var(--accent); }
+  .code-fn { color: #F9A8D4; }
+  .code-var { color: var(--text); }
+  .code-highlight {
+    background: rgba(110,231,183,0.08);
+    border-left: 2px solid var(--accent);
+    margin: 0 -24px;
+    padding: 2px 24px 2px 22px;
+    display: block;
+  }
+
+  /* ── PRICING ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+
+  .pricing-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .pricing-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+  }
+
+  .pricing-card.featured {
+    border-color: var(--accent);
+    background: rgba(110,231,183,0.04);
+    position: relative;
+  }
+
+  .featured-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .plan-name {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+
+  .plan-price {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .plan-price sup {
+    font-size: 24px;
+    vertical-align: super;
+    color: var(--muted);
+  }
+
+  .plan-period {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+
+  .plan-features {
+    list-style: none;
+    margin-bottom: 36px;
+  }
+
+  .plan-features li {
+    font-size: 14px;
+    color: var(--muted);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .plan-features li:last-child { border-bottom: none; }
+
+  .plan-features li::before {
+    content: '→';
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .btn-plan {
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    transition: all 0.2s;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+  }
+
+  .btn-plan:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-plan.primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+
+  .btn-plan.primary:hover { opacity: 0.88; color: var(--bg); }
+
+  /* ── HOW TO START ── */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .step {
+    background: var(--bg2);
+    padding: 32px;
+  }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .step-title {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .step-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .step-code {
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(110,231,183,0.06);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(110,231,183,0.15);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .footer-logo {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .footer-links a {
+    font-size: 14px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--text); }
+
+  .footer-copy {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ── DIVIDER ── */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 24px;
+    font-size: 14px;
+    color: var(--text);
+    z-index: 999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .hero { padding: 120px 24px 60px; }
+    section { padding: 60px 24px; }
+    .signup-form { flex-direction: column; }
+    .stats { flex-wrap: wrap; gap: 32px; }
+    .routing-demo-header,
+    .routing-row { grid-template-columns: 1fr 1fr; }
+    .routing-demo-header span:nth-child(3),
+    .routing-demo-header span:nth-child(4),
+    .routing-row > *:nth-child(3),
+    .routing-row > *:nth-child(4) { display: none; }
+    footer { padding: 32px 24px; flex-direction: column; }
+  }
+
+  /* ── KEY INPUTS ── */
+  .key-inputs {
+    max-width: 520px;
+    margin-top: 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .key-inputs-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .required {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .key-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .key-input-row:last-child { margin-bottom: 0; }
+
+  .key-input-row input {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .key-input-row input:focus { border-color: var(--accent); }
+  .key-input-row input::placeholder { color: #4B5563; }
+
+  .key-provider-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 100px;
+    min-width: 76px;
+    text-align: center;
+  }
+
+  .google-label    { background: rgba(110,231,183,0.1); color: var(--accent); border: 1px solid rgba(110,231,183,0.2); }
+  .openai-label    { background: rgba(59,130,246,0.1);  color: #93C5FD;       border: 1px solid rgba(59,130,246,0.2); }
+  .anthropic-label { background: rgba(245,158,11,0.1);  color: var(--accent3); border: 1px solid rgba(245,158,11,0.2); }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">⇄ <span>llmrouter</span></a>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">How it works</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="https://github.com/arpitjainn22/llm-router" target="_blank">GitHub ↗</a></li>
+    <li><a href="#signup" class="nav-cta">Get API key →</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Phase 1 — Live in production</div>
+
+  <h1>
+    Stop paying<br>
+    <span class="accent">frontier prices</span><br>
+    <span class="dim">for simple queries.</span>
+  </h1>
+
+  <p class="hero-sub">
+    Intelligent LLM routing that cuts your AI costs by 40%.
+    Bring your own Google, OpenAI, or Anthropic key.
+    We handle the routing — you keep full control of your keys.
+  </p>
+
+  <div id="signup">
+    <form id="signupForm" onsubmit="handleSignup(event)">
+      <div class="signup-form">
+        <input type="email" id="emailInput" placeholder="you@company.com" required autocomplete="email">
+        <button type="submit" class="btn-primary" id="signupBtn">Get free API key →</button>
+      </div>
+
+      <div class="key-inputs">
+        <p class="key-inputs-label">Add at least one LLM provider key <span class="required">*required</span></p>
+        <div class="key-input-row">
+          <span class="key-provider-label google-label">Google</span>
+          <input type="password" id="googleKey" placeholder="AIza..." autocomplete="off">
+        </div>
+        <div class="key-input-row">
+          <span class="key-provider-label openai-label">OpenAI</span>
+          <input type="password" id="openaiKey" placeholder="sk-..." autocomplete="off">
+        </div>
+        <div class="key-input-row">
+          <span class="key-provider-label anthropic-label">Anthropic</span>
+          <input type="password" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off">
+        </div>
+      </div>
+    </form>
+
+    <div class="signup-success" id="signupSuccess">
+      <h3>✓ You're live</h3>
+      <p>Check your email — your router API key is on its way. Your LLM provider keys are stored encrypted and used only for your requests.</p>
+    </div>
+
+    <p class="hero-note">Free tier — <span>1,000 requests/month</span>. No credit card. Your keys stay yours.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat-item">
+      <span class="stat-value">40%</span>
+      <div class="stat-label">Average cost reduction</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">&lt;1ms</span>
+      <div class="stat-label">Routing decision time</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">3</span>
+      <div class="stat-label">LLM providers supported</div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">1 line</span>
+      <div class="stat-label">Code change needed</div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works">
+  <div class="section-label">How it works</div>
+  <h2 class="section-title">The right model<br>for every query.</h2>
+  <p class="section-sub">Each query is scored using 12 signals. The score maps to the cheapest model that can handle it.</p>
+
+  <div class="routing-demo">
+    <div class="routing-demo-header">
+      <span>Query</span>
+      <span>Routed to</span>
+      <span>Cost</span>
+      <span>Saving</span>
+    </div>
+    <div class="routing-row">
+      <div class="query-text">"What is the capital of France?"</div>
+      <div><span class="model-badge tier0">Gemini Flash Lite</span></div>
+      <div class="cost-text">$0.0001</div>
+      <div class="saving-text">99%</div>
+    </div>
+    <div class="routing-row">
+      <div class="query-text">"Summarise this paragraph"</div>
+      <div><span class="model-badge tier0">Gemini Flash Lite</span></div>
+      <div class="cost-text">$0.0001</div>
+      <div class="saving-text">99%</div>
+    </div>
+    <div class="routing-row">
+      <div class="query-text">"Write a Python function to sort a list"</div>
+      <div><span class="model-badge tier1">Gemini 2.0 Flash</span></div>
+      <div class="cost-text">$0.001</div>
+      <div class="saving-text">93%</div>
+    </div>
+    <div class="routing-row">
+      <div class="query-text">"Analyse this contract for liability clauses"</div>
+      <div><span class="model-badge tier1">Gemini 2.0 Flash</span></div>
+      <div class="cost-text">$0.003</div>
+      <div class="saving-text">80%</div>
+    </div>
+    <div class="routing-row">
+      <div class="query-text">"Implement lock-free Rust with linearisability — must guarantee no ABA problem, ensure fault tolerance"</div>
+      <div><span class="model-badge tier2">Gemini 2.5 Pro</span></div>
+      <div class="cost-text">$0.015</div>
+      <div class="saving-text">0%</div>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top: 56px;">
+    <div class="code-header">
+      <div class="code-dot"></div>
+      <div class="code-dot"></div>
+      <div class="code-dot"></div>
+      <span class="code-title">your_app.py — one line change</span>
+    </div>
+    <div class="code-body">
+<pre><span class="code-comment"># Before — direct OpenAI</span>
+<span class="code-keyword">from</span> <span class="code-var">openai</span> <span class="code-keyword">import</span> <span class="code-var">AsyncOpenAI</span>
+<span class="code-var">client</span> = <span class="code-fn">AsyncOpenAI</span>(<span class="code-var">api_key</span>=<span class="code-string">"sk-..."</span>)
+
+<span class="code-comment"># After — route through LLM Router</span>
+<span class="code-keyword">from</span> <span class="code-var">openai</span> <span class="code-keyword">import</span> <span class="code-var">AsyncOpenAI</span>
+<span class="code-var">client</span> = <span class="code-fn">AsyncOpenAI</span>(
+<span class="code-highlight">    <span class="code-var">base_url</span>=<span class="code-string">"https://api.llmrouter.io/v1"</span>,  <span class="code-comment"># ← only this changes</span></span>
+    <span class="code-var">api_key</span>=<span class="code-string">"rk-live-your-router-key"</span>,
+)
+
+<span class="code-comment"># Everything else stays identical</span>
+<span class="code-var">response</span> = <span class="code-keyword">await</span> <span class="code-var">client</span>.<span class="code-var">chat</span>.<span class="code-var">completions</span>.<span class="code-fn">create</span>(
+    <span class="code-var">model</span>=<span class="code-string">"auto"</span>,  <span class="code-comment"># router decides</span>
+    <span class="code-var">messages</span>=[{<span class="code-string">"role"</span>: <span class="code-string">"user"</span>, <span class="code-string">"content"</span>: <span class="code-var">prompt</span>}]
+)</pre>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- HOW TO START -->
+<section>
+  <div class="section-label">Get started</div>
+  <h2 class="section-title">Up and running<br>in 3 minutes.</h2>
+  <p class="section-sub">No infrastructure to manage. Sign up and change one line of code.</p>
+
+  <div class="steps-grid">
+    <div class="step">
+      <div class="step-num">01 —</div>
+      <div class="step-title">Get your key</div>
+      <p class="step-desc">Sign up above. Your API key is emailed instantly. No credit card needed.</p>
+      <div class="step-code">rk-live-xxxxxxxxxxxx</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02 —</div>
+      <div class="step-title">Change base_url</div>
+      <p class="step-desc">Point your existing OpenAI client at our endpoint. One line.</p>
+      <div class="step-code">base_url="https://api.llmrouter.io/v1"</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03 —</div>
+      <div class="step-title">Set model="auto"</div>
+      <p class="step-desc">Let the router decide. Or force a specific model anytime.</p>
+      <div class="step-code">model="auto"</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04 —</div>
+      <div class="step-title">Watch savings</div>
+      <p class="step-desc">Your dashboard shows cost saved per request, routing breakdown, and quality scores.</p>
+      <div class="step-code">avg saving: 40%</div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="section-label">Pricing</div>
+  <h2 class="section-title">Start free.<br>Scale when ready.</h2>
+  <p class="section-sub">All plans include access to Google Gemini, OpenAI, and Anthropic models.</p>
+
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-price"><sup>$</sup>0</div>
+      <div class="plan-period">forever</div>
+      <ul class="plan-features">
+        <li>1,000 requests / month</li>
+        <li>All 3 providers</li>
+        <li>Basic routing (rule-based)</li>
+        <li>Request logs — 7 days</li>
+        <li>Community support</li>
+      </ul>
+      <a href="#signup" class="btn-plan">Get started free</a>
+    </div>
+
+    <div class="pricing-card featured">
+      <div class="featured-badge">Most popular</div>
+      <div class="plan-name">Starter</div>
+      <div class="plan-price"><sup>$</sup>20</div>
+      <div class="plan-period">per month</div>
+      <ul class="plan-features">
+        <li>100,000 requests / month</li>
+        <li>All 3 providers</li>
+        <li>ML routing (Phase 2)</li>
+        <li>Request logs — 90 days</li>
+        <li>Cost savings dashboard</li>
+        <li>Email support</li>
+      </ul>
+      <a href="#signup" class="btn-plan primary">Start free trial</a>
+    </div>
+
+    <div class="pricing-card">
+      <div class="plan-name">Pro</div>
+      <div class="plan-price"><sup>$</sup>99</div>
+      <div class="plan-period">per month</div>
+      <ul class="plan-features">
+        <li>1,000,000 requests / month</li>
+        <li>All 3 providers</li>
+        <li>Semantic routing (Phase 3)</li>
+        <li>Per-tenant policies</li>
+        <li>Request logs — 1 year</li>
+        <li>Priority support</li>
+        <li>SLA guarantee</li>
+      </ul>
+      <a href="mailto:arpit@llmrouter.io" class="btn-plan">Contact us</a>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- FOOTER -->
+<footer>
+  <a href="/" class="footer-logo">⇄ llmrouter</a>
+  <ul class="footer-links">
+    <li><a href="https://github.com/arpitjainn22/llm-router" target="_blank">GitHub</a></li>
+    <li><a href="https://github.com/arpitjainn22/llm-router/blob/main/docs/SETUP.md" target="_blank">Docs</a></li>
+    <li><a href="mailto:arpit@llmrouter.io">Contact</a></li>
+  </ul>
+  <div class="footer-copy">© 2026 LLM Router. MIT License.</div>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+async function handleSignup(e) {
+  e.preventDefault();
+  const email        = document.getElementById('emailInput').value;
+  const googleKey    = document.getElementById('googleKey').value.trim();
+  const openaiKey    = document.getElementById('openaiKey').value.trim();
+  const anthropicKey = document.getElementById('anthropicKey').value.trim();
+  const btn          = document.getElementById('signupBtn');
+
+  // Validate at least one key provided
+  if (!googleKey && !openaiKey && !anthropicKey) {
+    showToast('Please add at least one LLM provider API key');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Validating keys...';
+
+  try {
+    const payload = { email };
+    if (googleKey)    payload.google_api_key    = googleKey;
+    if (openaiKey)    payload.openai_api_key    = openaiKey;
+    if (anthropicKey) payload.anthropic_api_key = anthropicKey;
+
+    const res = await fetch('/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      document.getElementById('signupForm').style.display = 'none';
+      document.getElementById('signupSuccess').style.display = 'block';
+      if (data.warning) showToast(data.warning);
+    } else {
+      showToast(data.detail || 'Something went wrong — try again');
+      btn.disabled = false;
+      btn.textContent = 'Get free API key →';
+    }
+  } catch (err) {
+    showToast('Network error — please try again');
+    btn.disabled = false;
+    btn.textContent = 'Get free API key →';
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+</script>
+</body>
+</html>

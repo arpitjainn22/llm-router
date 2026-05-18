@@ -15,8 +15,25 @@ class Settings(BaseSettings):
     google_api_key: str = ""
 
     # Infrastructure
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/llmrouter"
+    database_url: str = "postgresql+asyncpg://llmrouter:llmrouter@localhost:5432/llmrouter"
+
+    @property
+    def async_database_url(self) -> str:
+        """
+        Railway provides DATABASE_URL as postgresql:// 
+        We need postgresql+asyncpg:// for async SQLAlchemy.
+        This property converts automatically.
+        """
+        url = self.database_url
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        return url
     redis_url: str = "redis://localhost:6379"
+
+    # Email (Resend — https://resend.com, free tier 3K emails/month)
+    resend_api_key: str = ""
 
     # Routing behaviour
     shadow_routing_fraction: float = 0.05

@@ -23,13 +23,17 @@ from typing import Optional
 import structlog
 from fastapi import FastAPI, HTTPException, Request, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
 from pydantic import BaseModel, Field
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from gateway.config import get_settings, MODEL_REGISTRY, get_default_provider
 from gateway.providers import get_adapter, LLMRequest, Message
 from gateway.auth import AuthService
+from gateway.signup import router as signup_router
+from gateway.vault import KeyVault, ProviderKey
 from classifier.rule_based import RuleBasedRouter
 from logger.models import RequestLogger, get_engine, get_session_factory, Base
 
@@ -45,11 +49,12 @@ session_factory = None
 router = None
 request_logger = None
 auth_service = None
+key_vault = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global engine, session_factory, router, request_logger, auth_service
+    global engine, session_factory, router, request_logger, auth_service, key_vault
 
     # DB setup
     engine = get_engine()
@@ -60,6 +65,7 @@ async def lifespan(app: FastAPI):
     router = RuleBasedRouter(settings)
     request_logger = RequestLogger(session_factory)
     auth_service = AuthService(session_factory)
+    key_vault = KeyVault(session_factory)
 
     log.info("gateway_started", environment=settings.environment)
     yield
@@ -78,6 +84,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Self-serve signup
+app.include_router(signup_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -193,7 +202,28 @@ async def chat_completions(
     )
 
     # --- LLM CALL ---
-    adapter = get_adapter(decision.provider)
+    # Get customer's provider key from vault
+    customer_key = await key_vault.get_key(tenant_id, decision.provider)
+    if not customer_key:
+        # Try fallback to another provider the customer has a key for
+        available = await key_vault.get_available_providers(tenant_id)
+        if not available:
+            raise HTTPException(
+                status_code=402,
+                detail="No LLM provider keys configured. Add your Google, OpenAI, or Anthropic key at /v1/keys"
+            )
+        # Re-route to a provider they have a key for
+        fallback_provider = available[0]
+        fallback_models = [
+            m for m, meta in MODEL_REGISTRY.items()
+            if meta["provider"] == fallback_provider
+        ]
+        if fallback_models:
+            decision.model_id = fallback_models[0]
+            decision.provider = fallback_provider
+            customer_key = await key_vault.get_key(tenant_id, fallback_provider)
+
+    adapter = get_adapter(decision.provider, customer_key)
     llm_request = LLMRequest(
         messages=[Message(role=m.role, content=m.content) for m in body.messages],
         model_id=decision.model_id,
@@ -213,17 +243,8 @@ async def chat_completions(
         error_message = str(exc)
         log.error("provider_error", model=decision.model_id, error=str(exc))
 
-        # Failover: only try models from providers with real API keys
-        s = get_settings()
-        available_providers = set()
-        if s.anthropic_api_key and len(s.anthropic_api_key) > 10:
-            available_providers.add("anthropic")
-        if s.openai_api_key and len(s.openai_api_key) > 10:
-            available_providers.add("openai")
-        if s.google_api_key and len(s.google_api_key) > 10:
-            available_providers.add("google")
-
-        # All models available for fallback (excluding the one that just failed)
+        # Failover: use customer vault keys only
+        available_providers = await key_vault.get_available_providers(tenant_id)
         fallback_pool = [
             m for m, meta in MODEL_REGISTRY.items()
             if meta["provider"] in available_providers
@@ -231,14 +252,14 @@ async def chat_completions(
         ]
 
         if fallback_pool:
-            # Prefer same provider, then any available
             same_provider = [m for m in fallback_pool
                              if MODEL_REGISTRY[m]["provider"] == provider_preference]
             fallback_model = same_provider[0] if same_provider else fallback_pool[0]
-            log.info("failover_attempt", fallback=fallback_model,
-                     available_providers=list(available_providers))
+            fallback_provider = MODEL_REGISTRY[fallback_model]["provider"]
+            fallback_key = await key_vault.get_key(tenant_id, fallback_provider)
+            log.info("failover_attempt", fallback=fallback_model)
             try:
-                fallback_adapter = get_adapter(MODEL_REGISTRY[fallback_model]["provider"])
+                fallback_adapter = get_adapter(fallback_provider, fallback_key)
                 llm_request.model_id = fallback_model
                 llm_response = await fallback_adapter.complete(llm_request)
                 decision.model_id = fallback_model
@@ -317,6 +338,18 @@ async def chat_completions(
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "0.1.0"}
+
+
+@app.get("/")
+async def landing_page():
+    """Serve the landing page."""
+    landing_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "landing", "index.html"
+    )
+    if os.path.exists(landing_path):
+        return FileResponse(landing_path)
+    return {"message": "LLM Router API", "docs": "/docs", "health": "/health"}
 
 
 @app.get("/v1/models")

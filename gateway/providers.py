@@ -108,7 +108,7 @@ class AnthropicAdapter(BaseAdapter):
             self.BASE_URL,
             json=payload,
             headers={
-                "x-api-key": settings.anthropic_api_key,
+                "x-api-key": getattr(self, "api_key", None) or settings.anthropic_api_key,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
             },
@@ -158,7 +158,7 @@ class OpenAIAdapter(BaseAdapter):
                 "temperature": request.temperature,
             },
             headers={
-                "Authorization": f"Bearer {settings.openai_api_key}",
+                "Authorization": f"Bearer {getattr(self, 'api_key', None) or settings.openai_api_key}",
                 "Content-Type": "application/json",
             },
         )
@@ -226,7 +226,7 @@ class GoogleAdapter(BaseAdapter):
             resp = await self.client.post(
                 url,
                 json=payload,
-                params={"key": settings.google_api_key},
+                params={"key": getattr(self, "api_key", None) or settings.google_api_key},
                 headers={"Content-Type": "application/json"},
             )
             if resp.status_code == 429 and attempt < 2:
@@ -257,18 +257,31 @@ class GoogleAdapter(BaseAdapter):
 # Adapter registry
 # ---------------------------------------------------------------------------
 
-_adapters = {}
-
-
-def get_adapter(provider: str) -> BaseAdapter:
-    """Return a cached adapter instance for the given provider."""
-    if provider not in _adapters:
+def get_adapter(provider: str, api_key: str = None) -> BaseAdapter:
+    """
+    Return an adapter for the given provider.
+    If api_key is provided, creates a fresh adapter with that key.
+    This is the BYOK (Bring Your Own Key) path — each customer's
+    key is injected at request time, never stored in the adapter.
+    """
+    if api_key:
+        # Per-request adapter with customer key — don't cache
         if provider == "anthropic":
-            _adapters[provider] = AnthropicAdapter()
+            a = AnthropicAdapter()
+            a.api_key = api_key
+            return a
         elif provider == "openai":
-            _adapters[provider] = OpenAIAdapter()
+            a = OpenAIAdapter()
+            a.api_key = api_key
+            return a
         elif provider == "google":
-            _adapters[provider] = GoogleAdapter()
+            a = GoogleAdapter()
+            a.api_key = api_key
+            return a
         else:
             raise ValueError(f"Unknown provider: {provider}")
-    return _adapters[provider]
+    else:
+        raise ValueError(
+            f"No API key provided for {provider}. "
+            "Customer must add their provider key at POST /v1/keys"
+        )

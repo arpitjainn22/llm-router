@@ -1,49 +1,132 @@
-# Environment
+# =====================================================
+# LLM Router — .gitignore
+# =====================================================
+
+# === SECRETS — never commit these ===
 .env
+.env.local
+.env.production
 *.env
 
-# Python
+# === Python ===
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-venv/
-env/
-.venv/
 *.egg-info/
 dist/
 build/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg
+MANIFEST
 
-# Testing
+# === Virtual environments ===
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# === Testing ===
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+nosetests.xml
+test-results/
 
-# IDE
+# === IDE ===
 .vscode/
 .idea/
 *.swp
 *.swo
-.DS_Store
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
 
-# Docker
+# === macOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# === Windows ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# === Docker ===
 .docker/
 
-# Logs
+# === Logs ===
 *.log
+logs/
+log/
 
-# Database
+# === Database ===
 *.db
+*.sqlite
 *.sqlite3
 
-# Model files (too large for git)
+# === ML model files (too large for git) ===
 *.pkl
 *.joblib
 *.pt
 *.pth
 *.bin
+*.onnx
+*.safetensors
+models/
+checkpoints/
 
-# Jupyter
+# === Jupyter ===
 .ipynb_checkpoints/
 *.ipynb
+profile_default/
+ipython_config.py
+
+# === Node ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === Misc ===
+*.bak
+*.tmp
+*.temp
+.cache/
+tmp/
+temp/
+.DS_Store
